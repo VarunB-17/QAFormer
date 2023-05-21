@@ -17,7 +17,6 @@ import torch
 from collections import Counter
 from params import _params
 
-
 tqdm.pandas()
 vocab_dist = Counter()
 char_dist = Counter()
@@ -103,15 +102,15 @@ def pt_embedding(counter, type_emb):
 
     # give identifiers to out-of-vocab tokens
     oov = "--OOV--"
-    null = "--NULL--"
+    pad = "--PAD--"
 
     # convert tokens to identifiers
     token2id = {token: i for i, token in enumerate(embedding_dict.keys(), 2)}
-    token2id[oov] = 0
-    token2id[null] = 1
+    token2id[oov] = 1
+    token2id[pad] = 0
 
     embedding_dict[oov] = torch.zeros(_params.glove_dim)
-    embedding_dict[null] = torch.zeros(_params.glove_dim)
+    embedding_dict[pad] = torch.zeros(_params.glove_dim)
     # convert identifiers to original token
     id2token = {i: token for token, i in token2id.items()}
     id2embed = {i: embedding_dict[token] for token, i in token2id.items()}
@@ -182,32 +181,43 @@ def preprocess() -> [pd.DataFrame, pd.DataFrame]:
     val['question'] = val['question'].apply(lambda x: x['token'])
     ############################################################################
     # remove instances with context that are longer than 600 tokens
-    train = train[train['context'].progress_apply(lambda x: len(x) <= _params.max_context)]
+    train = train[train['context'].apply(lambda x: len(x) <= _params.max_context)]
     train = train.reset_index(drop=True)
     train = train.sort_values(by=['context'], key=lambda x: x.str.len(), ascending=True)
     train = train.reset_index(drop=True)
 
-    # print(train['context'].apply(lambda x: len(x)).tail())
-    val = val[val['context'].progress_apply(lambda x: len(x) <= _params.max_context)]
+    val = val[val['context'].apply(lambda x: len(x) <= _params.max_context)]
     val = val.reset_index(drop=True)
     val = val.sort_values(by=['context'], key=lambda x: x.str.len(), ascending=True)
     val = val.reset_index(drop=True)
 
     # remove instances where answer length is longer then 30.
-    train = train[train['answer'].progress_apply(lambda x: len(x) <= _params.maxq)]
+    train = train[train['answer'].apply(lambda x: len(x) <= _params.maxq)]
     val = val[val['answer'].apply(lambda x: all(len(sublist) <= _params.maxq for sublist in x))]
     train = train.reset_index(drop=True)
     val = val.reset_index(drop=True)
-    # had to hardcode this part
+    # remove instances for which the answer length exceeds the context length
     train = train[train['start'].apply(lambda x: (x + 30) <= 400)]
+    val = val[val['start'].apply(lambda x: all(num + 30 <= 400 for num in x))]
 
-    train['ans_len'] = train['answer'].progress_apply(lambda x: len(x))
+    # create an additional columns that specifies the end of an answer in the context
+    train['ans_len'] = train['answer'].apply(lambda x: len(x))
     train['end'] = train[['start', 'ans_len']].sum(axis=1).apply(lambda x: span(x))
-    train['start'] = train['start'].progress_apply(lambda x: span(x))
+    train['start'] = train['start'].apply(lambda x: span(x))
     train = train.drop(columns=['ans_len'])
 
+    val['ans_len'] = val['answer'].apply(lambda x: [len(ans) for ans in x])
+    val['end'] = [list(map(sum, zip(lst1, lst2))) for lst1, lst2 in zip(val['start'], val['ans_len'])]
+    val['end'] = val['end'].apply(lambda x: [span(j) for j in x])
+    val = val.drop(columns=['ans_len'])
+
+    train = train.sort_values(by=['context'], key=lambda x: x.str.len(), ascending=True)
+    train = train.reset_index(drop=True)
+    val = val.sort_values(by=['context'], key=lambda x: x.str.len(), ascending=True)
+    val = val.reset_index(drop=True)
+
     ############################################################################
-    # store conversion files as pickle files
+    # store conversion files
     word_emb, word2ind, ind2word, id2embed_word = pt_embedding(vocab_dist, 'word')
     char_emb, char2ind, ind2char, id2_embed_char = pt_embedding(char_dist, 'char')
 
