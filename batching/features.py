@@ -1,6 +1,6 @@
 
 import json
-path = 'dataloader\\data'
+path = '../dataloader/data'
 
 
 def t2id(token, vocab):

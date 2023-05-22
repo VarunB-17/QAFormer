@@ -14,7 +14,7 @@ import pyarrow.parquet as pq
 from features import t2id
 from config import _params
 
-t_path, v_path = 'dataloader\\data\\train.parquet', 'dataloader\\data\\val.parquet'
+t_path, v_path = '..\\dataloader\\data\\train.parquet', '..\\dataloader\\data\\val.parquet'
 train, validation = pq.read_table(t_path).to_pandas(), pq.read_table(v_path).to_pandas()
 
 
@@ -116,8 +116,8 @@ class SQData(Dataset):
             span_ans = torch.cat((start.unsqueeze(0), end.unsqueeze(0)), dim=0)
         elif self.type == 'validation':
             answer = collate(item, 'answer', self.type)
-            start = np.array([span(x) for x in item['start']])
-            start = torch.tensor(start, dtype=torch.float32)
+            start = [torch.tensor(x, dtype=torch.float32) for x in item['start']]
+            start = torch.stack(start)
             end = [torch.tensor(x, dtype=torch.float32) for x in item['end']]
             end = torch.stack(end)
             span_ans = torch.transpose(torch.stack((start, end)), 0, 1)  # torch.Size([3, 2, 400])
@@ -145,7 +145,7 @@ if __name__ == '__main__':
                                    shuffle=False)
 
     if _params.save:
-        torch.save(training_loader, 'dataloader\\data\\training.pt')
-        torch.save(validation_loader, 'dataloader\\data\\training.pt')
+        torch.save(training_loader, '../dataloader/data/training.pt')
+        torch.save(validation_loader, '../dataloader/data/validation.pt')
     else:
         print('Files already exist!')
