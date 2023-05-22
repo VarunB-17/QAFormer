@@ -25,6 +25,7 @@ logging.basicConfig(level=logging.INFO)
 path = f'{_params.root}\\data'
 
 # define embedding and tokenizer
+spacy.cli.download("en_core_web_sm") # download model
 nlp = spacy.load("en_core_web_sm")  # uncased model
 
 
@@ -106,16 +107,17 @@ def pt_embedding(counter, type_emb):
 
     # convert tokens to identifiers
     token2id = {token: i for i, token in enumerate(embedding_dict.keys(), 2)}
-    token2id[oov] = 1
     token2id[pad] = 0
+    token2id[oov] = 1
 
     embedding_dict[oov] = torch.zeros(_params.glove_dim)
     embedding_dict[pad] = torch.zeros(_params.glove_dim)
     # convert identifiers to original token
     id2token = {i: token for token, i in token2id.items()}
     id2embed = {i: embedding_dict[token] for token, i in token2id.items()}
-    # returns embedding dictionary, token2id, id2token, and id2embedding
-    return embedding_dict, token2id, id2token, id2embed
+    emb_mat = [id2embed[idx] for idx in range(len(id2embed))]
+    # returns embedding matrix and token to id converter as .pt and .json files
+    return emb_mat, token2id
 
 
 def save(dct, fn):
@@ -209,6 +211,7 @@ def preprocess() -> [pd.DataFrame, pd.DataFrame]:
     val['ans_len'] = val['answer'].apply(lambda x: [len(ans) for ans in x])
     val['end'] = [list(map(sum, zip(lst1, lst2))) for lst1, lst2 in zip(val['start'], val['ans_len'])]
     val['end'] = val['end'].apply(lambda x: [span(j) for j in x])
+    val['start'] = val['start'].apply(lambda x: [span(j) for j in x])
     val = val.drop(columns=['ans_len'])
 
     train = train.sort_values(by=['context'], key=lambda x: x.str.len(), ascending=True)
@@ -218,22 +221,21 @@ def preprocess() -> [pd.DataFrame, pd.DataFrame]:
 
     ############################################################################
     # store conversion files
-    word_emb, word2ind, ind2word, id2embed_word = pt_embedding(vocab_dist, 'word')
-    char_emb, char2ind, ind2char, id2_embed_char = pt_embedding(char_dist, 'char')
+    word_emb, token2ind = pt_embedding(vocab_dist, 'word')
+    char_emb, char2ind, = pt_embedding(char_dist, 'char')
 
-    to_json = [word2ind, ind2word, char2ind, ind2char, word_emb, char_emb, id2embed_word, id2_embed_char, train, val]
-    to_json_str = ['word2ind', 'ind2word', 'char2ind', 'ind2char', 'word_emb', 'char_emb', 'id2embed_word',
-                   'id2_embed_char', 'train', 'val']
+    to_file = [token2ind, char2ind, word_emb, char_emb, train, val]
+    to_file_str = ['token2ind', 'char2ind', 'word_emb', 'char_emb', 'train', 'val']
 
     # Saving all dictionaries and dataframe for batch processing
     tqdm(desc='Saving vocabulary')
-    for i, item in enumerate(tqdm(to_json)):
-        if i <= 3:
-            save(item, f'{path}\\{to_json_str[i]}')
-        elif 3 < i < 8:
-            torch.save(item, f'{path}\\{to_json_str[i]}.pt')
+    for i, item in enumerate(tqdm(to_file)):
+        if i <= 1:
+            save(item, f'{path}\\{to_file_str[i]}')
+        elif 1 < i < 4:
+            torch.save(item, f'{path}\\{to_file_str[i]}.pt')
         else:
-            item.to_parquet(f'{path}\\{to_json_str[i]}.parquet')
+            item.to_parquet(f'{path}\\{to_file_str[i]}.parquet')
 
     logging.info('Pre-processing has finished!')
 
