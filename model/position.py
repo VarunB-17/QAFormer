@@ -1,6 +1,8 @@
 import torch
 from torch import nn
+from dev import get_device
 
+device = get_device()
 
 class PositionalEncoding(nn.Module):
     """""
@@ -32,6 +34,6 @@ class PositionalEncoding(nn.Module):
         # broadcast along shape of batch size in order to match dimensions of input seq
         pos_embed = pos_embed.expand(x.size(0), -1, -1)
         #  add positional embedding to word embedding
-        embedding = x + pos_embed
+        embedding = x.to(device) + pos_embed.to(device)
 
         return embedding

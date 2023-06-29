@@ -2,7 +2,7 @@ import torch
 from config import _modelcfg
 from torch import nn
 import torch.nn.functional as F
-import logging
+from position import PositionalEncoding
 
 
 class Highway(nn.Module):
@@ -22,7 +22,7 @@ class Highway(nn.Module):
     def forward(self, x):
 
         for i in range(self.layers):
-            transform = F.relu(self.transform[i](x))
+            transform = F.sigmoid(self.transform[i](x))
             gate = F.sigmoid((self.gate[i](x)))
             x = gate * transform + (1 - gate) * x
 
@@ -41,30 +41,29 @@ class EmbeddingWC(nn.Module):
     each word is represented by itself and its characters.
     """""
 
-    def __init__(self, c_dim=_modelcfg.char_emb):
+    def __init__(self, c_dim=_modelcfg.char_emb, w_dim=_modelcfg.word_emb):
         super().__init__()
+
         self.conv_char = nn.Conv2d(in_channels=c_dim,
                                    out_channels=c_dim,
-                                   kernel_size=(1, 5),
+                                   kernel_size=(1, _modelcfg.kernel_size),
                                    padding=(0, 2),
                                    bias=True)
+
         self.highway = Highway()
 
+        self.pe = PositionalEncoding(embed_dim=w_dim)
+
     def forward(self, word_emb, char_emb):
-        print('\nConvolution:')
         char_emb = char_emb.permute(0, 3, 1, 2)
         char_emb = F.dropout(char_emb, p=_modelcfg.c_drop, training=self.training)
         char_emb = self.conv_char(char_emb)
-        print('after conv           ', char_emb.size())
         char_emb = F.relu(char_emb)
         char_emb = char_emb.permute(0, 2, 3, 1)
-        print('after reshape            ', char_emb.size())
         char_emb = torch.max(char_emb, dim=2)[0]
-        print('after  max           ', char_emb.size())
 
+        word_emb = self.pe(word_emb)
         word_emb = F.dropout(word_emb, p=_modelcfg.w_drop, training=self.training)
         emb = torch.cat([char_emb, word_emb], dim=2)
-        print('concat word+char         ', emb.size())
         emb = self.highway(emb)
-        print('highway out:             ', emb.size())
-        return None
+        return emb
