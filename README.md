@@ -13,7 +13,7 @@
 
 ## Features
 
-* This model was built for my bachelor's thesis for the study of Artificial Intelligence at Vrije Universiteit Amsterdam.
+* This model was built for my bachelor's thesis for the study Artificial Intelligence at Vrije Universiteit Amsterdam.
 * The QAFormer is based on QAnet which was published by Google in 2018.
 * Training about around ~9 hours for 3 epochs.
 * Check out the config.py files to modify hyperparameters to what your machine can handle.
