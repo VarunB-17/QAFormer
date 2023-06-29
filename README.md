@@ -1,4 +1,3 @@
-
 <h1 align="center">
   <br>
   QAFormer
@@ -10,44 +9,53 @@
 
 
 
-![screenshot](https://raw.githubusercontent.com/amitmerchant1990/electron-markdownify/master/app/img/markdownify.gif)
+![screenshot](https://github.com/VarunFuego17/thesisqat/blob/main/qaf.png)
 
-## Key Features
+## Features
 
-* LivePreview - Make changes, See changes
-  - Instantly see what your Markdown documents look like in HTML as you create them.
-* Sync Scrolling
-  - While you type, LivePreview will automatically scroll to the current location you're editing.
-* GitHub Flavored Markdown  
-* Syntax highlighting
-* [KaTeX](https://khan.github.io/KaTeX/) Support
-* Dark/Light mode
-* Toolbar for basic Markdown formatting
-* Supports multiple cursors
-* Save the Markdown preview as PDF
-* Emoji support in preview :tada:
-* App will keep alive in tray for quick usage
-* Full screen mode
-  - Write distraction free.
-* Cross platform
-  - Windows, macOS and Linux ready.
+* This model was built for my bachelor's thesis for the study of Artificial Intelligence at Vrije Universiteit Amsterdam.
+* The QAFormer is based on QAnet that was published by Google in 2018.
+* Training about around ~9 hours for 3 epochs.
+* Check out the config.py files to modify hyperparameters to what your machine can handle.
 
 ## How To Use
 
-To clone and run this application, you'll need [Git](https://git-scm.com) and [Node.js](https://nodejs.org/en/download/) (which comes with [npm](http://npmjs.com)) installed on your computer. From your command line:
 
 ```bash
 # Clone this repository
-$ git clone https://github.com/amitmerchant1990/electron-markdownify
+$ git clone https://github.com/VarunFuego17/thesisqat.git
+
+# Install dependencies (latest versions)
+$ pip install pytorch 
+$ pip install pyarrow
+$ pip install wandb
+$ pip install torchtext
+$ pip install datasets
+$ pip install spacy
+$ pip install pandas
+$ pip install numpy
 
 # Go into the repository
-$ cd electron-markdownify
+$ cd dataloader
+# Run the following file
+$ python3 dataloader.py
 
-# Install dependencies
-$ npm install
+# This should create the following files in the dataloader folder:
+```
+<img width="419" alt="image" src="https://github.com/VarunFuego17/thesisqat/assets/45126763/997d5ccd-c820-415c-a911-495923ca2404">
 
-# Run the app
-$ npm start
+```bash
+# Go into the repository
+$ cd model
+# Run the following command for creating the model:
+$ python3 train.py --debug=1
+# This should create the file -> "qaf_128_8_4"
+# Run the following command for testing the model on the created dataset:
+$ python3 train.py --debug=2
+# Run the following command if you want to see if any errors appear:
+$ python3 train.py --debug=0
+
+
 ```
 
 > **Note**
