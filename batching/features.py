@@ -1,4 +1,3 @@
-
 import json
 path = '../dataloader/data'
 
@@ -12,7 +11,7 @@ def t2id(token, vocab):
     assert isinstance(token, str), "token should be a string"
 
     if vocab == 'word':
-        with open(f'{path}\\word2ind.json', 'r') as file:
+        with open(f'{path}\\token2ind.json', 'r') as file:
             vcb = json.load(file)
 
         if token in vcb:
@@ -56,4 +55,5 @@ def id2t(idx, vocab):
         else:
             return vcb['1']
 
-
+if __name__ == "__main__":
+    print(t2id('cat', 'word'))
