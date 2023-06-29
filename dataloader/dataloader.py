@@ -25,7 +25,7 @@ logging.basicConfig(level=logging.INFO)
 path = f'{_params.root}\\data'
 
 # define embedding and tokenizer
-spacy.cli.download("en_core_web_sm") # download model
+spacy.cli.download("en_core_web_sm")  # download model
 nlp = spacy.load("en_core_web_sm")  # uncased model
 
 
@@ -97,9 +97,9 @@ def pt_embedding(counter, type_emb):
                 embedding_dict[w] = glove['w']
 
     # character embeddings
-    else:
+    elif type_emb == 'char':
         for c in words:
-            embedding_dict[c] = torch.rand(_params.char_dim, requires_grad=True)
+            embedding_dict[c] = torch.randn(_params.char_dim, requires_grad=True)
 
     # give identifiers to out-of-vocab tokens
     oov = "--OOV--"
@@ -109,11 +109,14 @@ def pt_embedding(counter, type_emb):
     token2id = {token: i for i, token in enumerate(embedding_dict.keys(), 2)}
     token2id[pad] = 0
     token2id[oov] = 1
+    if type_emb == 'word':
+        embedding_dict[oov] = torch.zeros(_params.glove_dim)
+        embedding_dict[pad] = torch.zeros(_params.glove_dim)
+    elif type_emb == 'char':
+        embedding_dict[oov] = torch.zeros(_params.char_dim)
+        embedding_dict[pad] = torch.zeros(_params.char_dim)
 
-    embedding_dict[oov] = torch.zeros(_params.glove_dim)
-    embedding_dict[pad] = torch.zeros(_params.glove_dim)
     # convert identifiers to original token
-    id2token = {i: token for token, i in token2id.items()}
     id2embed = {i: embedding_dict[token] for token, i in token2id.items()}
     emb_mat = [id2embed[idx] for idx in range(len(id2embed))]
     # returns embedding matrix and token to id converter as .pt and .json files
@@ -199,19 +202,19 @@ def preprocess() -> [pd.DataFrame, pd.DataFrame]:
     train = train.reset_index(drop=True)
     val = val.reset_index(drop=True)
     # remove instances for which the answer length exceeds the context length
-    train = train[train['start'].apply(lambda x: (x + 30) <= 400)]
-    val = val[val['start'].apply(lambda x: all(num + 30 <= 400 for num in x))]
+    train = train[train['start'].apply(lambda x: (x + _params.maxq) <= _params.max_context)]
+    val = val[val['start'].apply(lambda x: all(num + _params.maxq <= _params.max_context for num in x))]
 
     # create an additional columns that specifies the end of an answer in the context
     train['ans_len'] = train['answer'].apply(lambda x: len(x))
-    train['end'] = train[['start', 'ans_len']].sum(axis=1).apply(lambda x: span(x))
-    train['start'] = train['start'].apply(lambda x: span(x))
+    train['end'] = train[['start', 'ans_len']].sum(axis=1)
+    train['start'] = train['start']
     train = train.drop(columns=['ans_len'])
 
     val['ans_len'] = val['answer'].apply(lambda x: [len(ans) for ans in x])
     val['end'] = [list(map(sum, zip(lst1, lst2))) for lst1, lst2 in zip(val['start'], val['ans_len'])]
-    val['end'] = val['end'].apply(lambda x: [span(j) for j in x])
-    val['start'] = val['start'].apply(lambda x: [span(j) for j in x])
+    val['end'] = val['end']
+    val['start'] = val['start']
     val = val.drop(columns=['ans_len'])
 
     train = train.sort_values(by=['context'], key=lambda x: x.str.len(), ascending=True)
@@ -231,13 +234,14 @@ def preprocess() -> [pd.DataFrame, pd.DataFrame]:
     tqdm(desc='Saving vocabulary')
     for i, item in enumerate(tqdm(to_file)):
         if i <= 1:
-            save(item, f'{path}\\{to_file_str[i]}')
+            pass
+            # save(item, f'{path}\\{to_file_str[i]}')
         elif 1 < i < 4:
-            torch.save(item, f'{path}\\{to_file_str[i]}.pt')
+            pass
+            # torch.save(item, f'{path}\\{to_file_str[i]}.pt')
         else:
             item.to_parquet(f'{path}\\{to_file_str[i]}.parquet')
 
-    logging.info('Pre-processing has finished!')
 
 
 # Run file

@@ -18,7 +18,7 @@ def config():
                            default='840B', type=str)
     arguments.add_argument("-mc", "--max_context",
                            help='maximum length of a context or passage',
-                           default=400, type=int)
+                           default=300, type=int)
     arguments.add_argument("-ce", "--char_dim",
                            help='character vector embedding dimension',
                            default=200, type=int)
