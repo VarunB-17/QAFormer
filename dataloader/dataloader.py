@@ -235,10 +235,10 @@ def preprocess() -> [pd.DataFrame, pd.DataFrame]:
     for i, item in enumerate(tqdm(to_file)):
         if i <= 1:
             pass
-            # save(item, f'{path}\\{to_file_str[i]}')
+            save(item, f'{path}\\{to_file_str[i]}')
         elif 1 < i < 4:
             pass
-            # torch.save(item, f'{path}\\{to_file_str[i]}.pt')
+            torch.save(item, f'{path}\\{to_file_str[i]}.pt')
         else:
             item.to_parquet(f'{path}\\{to_file_str[i]}.parquet')
 
