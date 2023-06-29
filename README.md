@@ -42,9 +42,10 @@ $ python3 dataloader.py
 
 # This should create the following files in the dataloader folder:
 ```
-<img width="419" alt="image" src="https://github.com/VarunFuego17/thesisqat/assets/45126763/997d5ccd-c820-415c-a911-495923ca2404">
+<img width="461" alt="image" src="https://github.com/VarunFuego17/qaformer/assets/45126763/cb2910ec-0ab0-464c-b70a-b086ca8554ac">
 
-```bash
+```
+bash
 # Go into the repository
 $ cd model
 # Run the following command for creating the model:
